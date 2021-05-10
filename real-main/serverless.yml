@@ -54,12 +54,12 @@ provider:
     S3_PROMO_CODES_BUCKET: real-${self:provider.stage}-promo-codes-#{AWS::AccountId}
 
     SECRETSMANAGER_APPLE_APPSTORE_PARAMS_NAME: AppleAppstoreParams-1
+    SECRETSMANAGER_AMPLITUDE_API_KEY_NAME: AmplitudeApiKey-1
     SECRETSMANAGER_CLOUDFRONT_KEY_PAIR_NAME: CloudFrontKeyPair-1
     SECRETSMANAGER_POST_VERIFICATION_API_CREDS_NAME: PostVerificationAPICreds-${self:provider.stage}-1
     SECRETSMANAGER_GOOGLE_CLIENT_IDS_NAME: GoogleClientIds-1
     SECRETSMANAGER_REAL_KEY_PAIR_NAME: RealKeyPair-1
 
-    AMPLITUDE_API_KEY: ${env:AMPLITUDE_API_KEY, ''}
     APPLE_AUDIENCE_ID: ${env:AUTHENTICATION_PROVIDER_APPLEID, 'app.real.mobile'}
     TRENDING_POST_MIN_COUNT_TO_KEEP: ${env:TRENDING_POST_MIN_COUNT_TO_KEEP, '1000'}
 
@@ -179,6 +179,7 @@ custom:
     authenticationType: AWS_IAM
     caching:
       behavior: PER_RESOLVER_CACHING
+      ttl: 1
     logConfig:
       level: ALL
     substitutions:
@@ -251,18 +252,6 @@ custom:
           - Users.batchGet.followedStatus
           - Users.filterBy.followedStatus
       
-      - type: PaginatedTrendingPosts
-        field: items
-        request: PaginatedTrendingPosts.items/before.request.vtl
-        response: PaginatedTrendingPosts.items/after.response.vtl  # temp copy of Users.endPipeline
-        kind: PIPELINE
-        functions:
-          - Posts.batchGet
-          - Posts.filterBy.postStatus
-          - PaginatedPosts.items.applyFilters
-          - Users.beginPipeline
-          - Users.batchGet
-
       - type: PaginatedUsers
         field: items
         request: PaginatedUsers.items/before.request.vtl
