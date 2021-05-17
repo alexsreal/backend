@@ -192,19 +192,22 @@ module.exports.setThemeCode = gql`
 `
 
 module.exports.setUserMentalHealthSettings = gql`
-  mutation SetUserCommentsDisabled(
+  mutation SetUserMentalHealthSettings(
+    $adsDisabled: Boolean
     $commentsDisabled: Boolean
     $likesDisabled: Boolean
     $sharingDisabled: Boolean
     $verificationHidden: Boolean
   ) {
     setUserDetails(
+      adsDisabled: $adsDisabled
       commentsDisabled: $commentsDisabled
       likesDisabled: $likesDisabled
       sharingDisabled: $sharingDisabled
       verificationHidden: $verificationHidden
     ) {
       userId
+      adsDisabled
       commentsDisabled
       likesDisabled
       sharingDisabled

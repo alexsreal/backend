@@ -170,6 +170,7 @@ class UserDynamo:
         view_counts_hidden=None,
         email=None,
         phone=None,
+        ads_disabled=None,
         comments_disabled=None,
         likes_disabled=None,
         sharing_disabled=None,
@@ -210,6 +211,7 @@ class UserDynamo:
         process_attr('viewCountsHidden', view_counts_hidden)
         process_attr('email', email)
         process_attr('phoneNumber', phone)
+        process_attr('adsDisabled', ads_disabled)
         process_attr('commentsDisabled', comments_disabled)
         process_attr('likesDisabled', likes_disabled)
         process_attr('sharingDisabled', sharing_disabled)

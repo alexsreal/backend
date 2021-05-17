@@ -354,6 +354,7 @@ class User(TrendingModelMixin):
         theme_code=None,
         follow_counts_hidden=None,
         view_counts_hidden=None,
+        ads_disabled=None,
         comments_disabled=None,
         likes_disabled=None,
         sharing_disabled=None,
