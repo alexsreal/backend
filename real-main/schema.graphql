@@ -139,6 +139,7 @@ type Mutation {
     privacyStatus: PrivacyStatus,
     followCountsHidden: Boolean,
     viewCountsHidden: Boolean,
+    adsDisabled: Boolean,
     commentsDisabled: Boolean,
     likesDisabled: Boolean,
     sharingDisabled: Boolean,
@@ -448,6 +449,7 @@ type User {
   acceptedEULAVersion: String
   followCountsHidden: Boolean
   viewCountsHidden: Boolean
+  adsDisabled: Boolean
   commentsDisabled: Boolean
   likesDisabled: Boolean
   sharingDisabled: Boolean

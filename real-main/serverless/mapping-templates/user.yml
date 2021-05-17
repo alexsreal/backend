@@ -114,6 +114,11 @@
   response: PassThru.response.vtl
 
 - type: User
+  field: adsDisabled
+  dataSource: NoneDataSource
+  response: PassThru.response.vtl
+
+- type: User
   field: commentsDisabled
   dataSource: NoneDataSource
   response: PassThru.response.vtl

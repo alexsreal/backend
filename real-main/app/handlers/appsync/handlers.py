@@ -319,6 +319,7 @@ def set_user_details(caller_user, arguments, **kwargs):
     view_counts_hidden = arguments.get('viewCountsHidden')
     language_code = arguments.get('languageCode')
     theme_code = arguments.get('themeCode')
+    ads_disabled = arguments.get('adsDisabled')
     comments_disabled = arguments.get('commentsDisabled')
     likes_disabled = arguments.get('likesDisabled')
     sharing_disabled = arguments.get('sharingDisabled')
@@ -342,6 +343,7 @@ def set_user_details(caller_user, arguments, **kwargs):
         follow_counts_hidden,
         language_code,
         theme_code,
+        ads_disabled,
         comments_disabled,
         likes_disabled,
         sharing_disabled,
@@ -408,6 +410,7 @@ def set_user_details(caller_user, arguments, **kwargs):
         theme_code=theme_code,
         follow_counts_hidden=follow_counts_hidden,
         view_counts_hidden=view_counts_hidden,
+        ads_disabled=ads_disabled,
         comments_disabled=comments_disabled,
         likes_disabled=likes_disabled,
         sharing_disabled=sharing_disabled,
