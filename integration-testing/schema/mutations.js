@@ -417,6 +417,8 @@ module.exports.addPost = gql`
     $crop: CropInput
     $rotate: Int
     $keywords: [String!]
+    $isAd: Boolean
+    $adPayment: Float
   ) {
     addPost(
       postId: $postId
@@ -439,6 +441,8 @@ module.exports.addPost = gql`
       verificationHidden: $verificationHidden
       setAsUserPhoto: $setAsUserPhoto
       keywords: $keywords
+      isAd: $isAd
+      adPayment: $adPayment
     ) {
       postId
       postedAt

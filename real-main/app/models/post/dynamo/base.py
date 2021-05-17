@@ -1,6 +1,7 @@
 import collections
 import functools
 import logging
+from decimal import BasicContext, Decimal
 
 import pendulum
 from boto3.dynamodb.conditions import Attr, Key
@@ -88,6 +89,8 @@ class PostDynamo:
         verification_hidden=None,
         keywords=None,
         set_as_user_photo=None,
+        ad_status=None,
+        ad_payment=None,
     ):
         posted_at = posted_at or pendulum.now('utc')
         posted_at_str = posted_at.to_iso8601_string()
@@ -139,6 +142,10 @@ class PostDynamo:
             item['setAsUserPhoto'] = set_as_user_photo
         if keywords is not None:
             item['keywords'] = list(set(keywords))  # remove duplicates
+        if ad_status is not None and ad_status is not enums.AdStatus.NOT_AD:
+            item['adStatus'] = ad_status
+        if ad_payment is not None:
+            item['adPayment'] = Decimal(ad_payment).normalize(context=BasicContext)
         return self.client.add_item({'Item': item})
 
     def increment_flag_count(self, post_id):

@@ -190,6 +190,7 @@ type Mutation {
   #   - setAsUserPhoto:
   #     - may only be used with IMAGE posts
   #     - if set to True, the post will be set as user profile photo if/when it reaches COMPLETED status
+  #   - adPayment may only be set if isAd is set to True
   addPost(
     postId: ID!,
     postType: PostType,  # defaults to IMAGE if not supplied
@@ -203,6 +204,8 @@ type Mutation {
     verificationHidden: Boolean,
     setAsUserPhoto: Boolean,
     keywords: [String!],
+    isAd: Boolean,
+    adPayment: Float,
   ): Post
 
   # Edit a Post
@@ -742,6 +745,12 @@ enum LikeStatus {
   NOT_LIKED
 }
 
+enum AdStatus {
+  NOT_AD
+  PENDING
+  APPROVED
+}
+
 enum FlagStatus {
   FLAGGED
   NOT_FLAGGED
@@ -834,6 +843,9 @@ type Post {
   verificationHidden: Boolean
   isVerified: Boolean
   keywords: [String!]
+
+  adStatus: AdStatus!
+  adPayment: Float
 
   image: Image
   imageUploadUrl: AWSURL

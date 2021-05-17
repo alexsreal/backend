@@ -16,7 +16,7 @@ from app.models.user.enums import SubscriptionGrantCode, UserPrivacyStatus, User
 from app.utils import GqlNotificationType
 
 from .dynamo import PostDynamo, PostImageDynamo, PostOriginalMetadataDynamo
-from .enums import PostStatus, PostType
+from .enums import AdStatus, PostStatus, PostType
 from .exceptions import PostException
 from .model import Post
 
@@ -95,6 +95,8 @@ class PostManager(FlagManagerMixin, TrendingManagerMixin, ViewManagerMixin, Mana
         verification_hidden=None,
         keywords=None,
         set_as_user_photo=None,
+        is_ad=None,
+        ad_payment=None,
         now=None,
     ):
         now = now or pendulum.now('utc')
@@ -129,6 +131,15 @@ class PostManager(FlagManagerMixin, TrendingManagerMixin, ViewManagerMixin, Mana
                     raise PostException(f'Invalid rotate angle - {rotate}')
         else:
             raise Exception(f'Invalid PostType `{post_type}`')
+
+        if is_ad:
+            if ad_payment is None:
+                raise PostException('Cannot add advertisement post without setting adPayment')
+            ad_status = AdStatus.PENDING
+        else:
+            if ad_payment is not None:
+                raise PostException('Cannot add non-advertisement post with adPayment set')
+            ad_status = AdStatus.NOT_AD
 
         expires_at = now + lifetime_duration if lifetime_duration is not None else None
         if expires_at and expires_at <= now:
@@ -172,6 +183,8 @@ class PostManager(FlagManagerMixin, TrendingManagerMixin, ViewManagerMixin, Mana
             album_id=album_id,
             keywords=keywords,
             set_as_user_photo=set_as_user_photo,
+            ad_status=ad_status,
+            ad_payment=ad_payment,
         )
         post = self.init_post(post_item)
 

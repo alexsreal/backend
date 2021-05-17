@@ -1,12 +1,13 @@
 import logging
-from decimal import Decimal
+from decimal import BasicContext, Decimal
+from random import randint, random
 from uuid import uuid4
 
 import pendulum
 import pytest
 
 from app.models.post.dynamo import PostDynamo
-from app.models.post.enums import PostStatus
+from app.models.post.enums import AdStatus, PostStatus
 
 
 @pytest.fixture
@@ -120,6 +121,28 @@ def test_add_pending_post_with_options(post_dynamo):
         'setAsUserPhoto': True,
         'keywords': list(set(keywords)),
     }
+
+
+@pytest.mark.parametrize('ad_status', [None, AdStatus.NOT_AD])
+def test_add_pending_post_not_as_ad(post_dynamo, ad_status):
+    user_id, post_id = str(uuid4()), str(uuid4())
+    post_item = post_dynamo.add_pending_post(user_id, post_id, 'ptype', ad_status=ad_status)
+    assert post_dynamo.get_post(post_id) == post_item
+    assert 'adStatus' not in post_item
+    assert 'adPayment' not in post_item
+
+
+@pytest.mark.parametrize('ad_payment', [randint(0, 100), random(), Decimal(random())])
+def test_add_pending_post_as_ad(post_dynamo, ad_payment):
+    user_id, post_id = str(uuid4()), str(uuid4())
+    ad_status = AdStatus.PENDING
+    ad_payment = random()
+    post_item = post_dynamo.add_pending_post(
+        user_id, post_id, 'ptype', ad_status=ad_status, ad_payment=ad_payment
+    )
+    assert post_dynamo.get_post(post_id) == post_item
+    assert post_item['adStatus'] == ad_status
+    assert post_item['adPayment'] == Decimal(ad_payment).normalize(context=BasicContext)
 
 
 def test_transact_add_post_already_exists(post_dynamo):
