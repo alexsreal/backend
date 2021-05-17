@@ -755,6 +755,8 @@ def add_post(caller_user, arguments, **kwargs):
     sharing_disabled = arguments.get('sharingDisabled')
     verification_hidden = arguments.get('verificationHidden')
     keywords = arguments.get('keywords')
+    is_ad = arguments.get('isAd')
+    ad_payment = arguments.get('adPayment')
 
     lifetime_iso = arguments.get('lifetime')
     if lifetime_iso:
@@ -782,6 +784,8 @@ def add_post(caller_user, arguments, **kwargs):
             verification_hidden=verification_hidden,
             keywords=keywords,
             set_as_user_photo=set_as_user_photo,
+            is_ad=is_ad,
+            ad_payment=ad_payment,
         )
     except PostException as err:
         raise ClientException(str(err)) from err

@@ -1,3 +1,11 @@
+class AdStatus:
+    NOT_AD = 'NOT_AD'
+    PENDING = 'PENDING'
+    APPROVED = 'APPROVED'
+
+    _ALL = (NOT_AD, PENDING, APPROVED)
+
+
 class PostStatus:
     PENDING = 'PENDING'
     PROCESSING = 'PROCESSING'

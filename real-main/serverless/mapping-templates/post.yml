@@ -1,4 +1,9 @@
 - type: Post
+  field: adStatus
+  dataSource: NoneDataSource
+  response: PassThru.response.vtl
+
+- type: Post
   field: flagStatus
   dataSource: DynamodbDataSource
   caching:

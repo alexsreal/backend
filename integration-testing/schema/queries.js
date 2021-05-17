@@ -294,6 +294,8 @@ module.exports.post = gql`
         }
       }
       keywords
+      adStatus
+      adPayment
     }
   }
   ${fragments.comment}
