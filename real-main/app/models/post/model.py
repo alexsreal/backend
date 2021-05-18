@@ -464,6 +464,8 @@ class Post(FlagModelMixin, TrendingModelMixin, ViewModelMixin):
         "Transition the ad post to APPROVED ad status"
         if self.ad_status != AdStatus.PENDING:
             raise PostException(f'Cannot approve post `{self.id}` in adStatus `{self.ad_status}`')
+        if self.status != PostStatus.COMPLETED:
+            raise PostException(f'Cannot approve post `{self.id}` in status `{self.status}`')
         self.item = self.dynamo.set(self.id, ad_status=AdStatus.APPROVED)
         return self
 

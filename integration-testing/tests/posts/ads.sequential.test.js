@@ -24,6 +24,7 @@ afterAll(async () => {
 
 describe('Approving an ad post', () => {
   const postIdAd = uuidv4()
+  const postIdIncompleteAd = uuidv4()
   const postIdNonAd = uuidv4()
   let client, realClient
 
@@ -33,6 +34,10 @@ describe('Approving an ad post', () => {
     await client.mutate({
       mutation: mutations.addPost,
       variables: {postId: postIdAd, imageData, isAd: true, adPayment: 0.01},
+    })
+    await client.mutate({
+      mutation: mutations.addPost,
+      variables: {postId: postIdIncompleteAd, isAd: true, adPayment: 0.01},
     })
     await client.mutate({mutation: mutations.addPost, variables: {postId: postIdNonAd, imageData}})
   })
@@ -98,6 +103,16 @@ describe('Approving an ad post', () => {
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(/^ClientError: /)
           expect(errors[0].message).toMatch(/Cannot approve post .* in adStatus `NOT_AD`/)
+        })
+    })
+
+    test('cannot approve an ad post that is not COMPLETED', async () => {
+      await realClient
+        .mutate({mutation: mutations.approveAdPost, variables: {postId: postIdIncompleteAd}, errorPolicy: 'all'})
+        .then(({errors}) => {
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toMatch(/^ClientError: /)
+          expect(errors[0].message).toMatch(/Cannot approve post .* in status `PENDING`/)
         })
     })
 

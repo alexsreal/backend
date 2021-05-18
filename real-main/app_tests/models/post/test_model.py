@@ -866,18 +866,25 @@ def test_get_trending_multiplier(post):
     assert post.get_trending_multiplier(view_type=ViewType.FOCUS) == default * 2
 
 
-def test_approve(post):
+def test_approve(post, pending_image_post):
     # can't approve a post that isn't an ad
     assert post.ad_status == AdStatus.NOT_AD
     with pytest.raises(PostException, match='Cannot approve post .* in adStatus .*'):
         post.approve()
 
-    # go directly to DB to change the post to PENDING
+    # go directly to DB to change the posts to PENDING ads
+    pending_image_post.dynamo.set(pending_image_post.id, ad_status=AdStatus.PENDING)
+    pending_image_post.refresh_item()
+    assert pending_image_post.ad_status == AdStatus.PENDING
     post.dynamo.set(post.id, ad_status=AdStatus.PENDING)
     post.refresh_item()
     assert post.ad_status == AdStatus.PENDING
 
-    # can approve the PENDING ad
+    # can't approve a post that's PENDING
+    with pytest.raises(PostException, match='Cannot approve post .* in status .*'):
+        pending_image_post.approve()
+
+    # can approve the PENDING ad that's COMPLETED
     post.approve()
     assert post.ad_status == AdStatus.APPROVED
 
