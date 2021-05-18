@@ -185,15 +185,48 @@ def test_generate_posts_by_user(post_dynamo):
     assert [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=True)] == [post_id]
     assert [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=False)] == []
 
-    # we add another post
-    post_id_2 = 'pid2'
-    post_dynamo.add_pending_post(user_id, post_id_2, 'ptype', text='lore ipsum')
+    # we add posts in different states
+    post_id_2, post_id_3, post_id_4 = 'pid2', 'pid3', 'pid4'
+    post_dynamo.add_pending_post(user_id, post_id_2, 'ptype')
+    post_dynamo.add_pending_post(user_id, post_id_3, 'ptype', ad_status=AdStatus.PENDING)
+    post_item = post_dynamo.add_pending_post(user_id, post_id_4, 'ptype', ad_status=AdStatus.APPROVED)
+    post_dynamo.set_post_status(post_item, PostStatus.COMPLETED)
 
-    # check genertaion
+    # check genertaion, all posts
     post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id)]
+    assert sorted(post_ids) == ['pid', 'pid2', 'pid3', 'pid4']
+
+    # check generation of completed posts
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=True)]
+    assert sorted(post_ids) == ['pid', 'pid4']
+
+    # check generation of pending posts
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=False)]
+    assert sorted(post_ids) == ['pid2', 'pid3']
+
+    # check generation of non-ads
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, is_ad=False)]
     assert sorted(post_ids) == ['pid', 'pid2']
-    assert [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=True)] == [post_id]
-    assert [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=False)] == [post_id_2]
+
+    # check generation of ads
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, is_ad=True)]
+    assert sorted(post_ids) == ['pid3', 'pid4']
+
+    # check generation of pending ads
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=False, is_ad=True)]
+    assert sorted(post_ids) == ['pid3']
+
+    # check generation of completed ads
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=True, is_ad=True)]
+    assert sorted(post_ids) == ['pid4']
+
+    # check generation of completed normal posts
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=True, is_ad=False)]
+    assert sorted(post_ids) == ['pid']
+
+    # check generation of pending normal posts
+    post_ids = [p['postId'] for p in post_dynamo.generate_posts_by_user(user_id, completed=False, is_ad=False)]
+    assert sorted(post_ids) == ['pid2']
 
 
 def test_set_post_status(post_dynamo):

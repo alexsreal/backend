@@ -3,7 +3,7 @@ import logging
 
 from app import models
 from app.models.follower.enums import FollowStatus
-from app.models.post.enums import PostStatus
+from app.models.post.enums import AdStatus, PostStatus
 from app.utils import GqlNotificationType
 
 from .dynamo import FeedDynamo
@@ -25,7 +25,9 @@ class FeedManager:
             self.dynamo = FeedDynamo(clients['dynamo_feed'])
 
     def add_users_posts_to_feed(self, feed_user_id, posted_by_user_id):
-        post_item_generator = self.post_manager.dynamo.generate_posts_by_user(posted_by_user_id, completed=True)
+        post_item_generator = self.post_manager.dynamo.generate_posts_by_user(
+            posted_by_user_id, completed=True, is_ad=False
+        )
         self.dynamo.add_posts_to_feed(feed_user_id, post_item_generator)
 
     def add_post_to_followers_feeds(self, followed_user_id, post_item):
@@ -44,6 +46,9 @@ class FeedManager:
         self.appsync_client.fire_notification(follower_user_id, GqlNotificationType.USER_FEED_CHANGED)
 
     def on_post_status_change_sync_feed(self, post_id, new_item=None, old_item=None):
+        ad_status = (new_item or {}).get('adStatus', AdStatus.NOT_AD)
+        if ad_status != AdStatus.NOT_AD:
+            return
         posted_by_user_id = (new_item or old_item)['postedByUserId']
         new_status = (new_item or {}).get('postStatus')
         if new_status == PostStatus.COMPLETED:

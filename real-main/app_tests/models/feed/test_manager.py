@@ -13,13 +13,14 @@ def user(user_manager, cognito_client):
     yield user_manager.create_cognito_only_user(user_id, username)
 
 
-def test_add_users_posts_to_feed(feed_manager, post_manager, user, cognito_client):
+def test_add_users_posts_to_feed(feed_manager, post_manager, user):
     feed_user_id = str(uuid4())
 
-    # user has two posts
-    post_id_1, post_id_2 = str(uuid4()), str(uuid4())
+    # user has two posts and an ad
+    post_id_1, post_id_2, post_id_3 = str(uuid4()), str(uuid4()), str(uuid4())
     post_manager.add_post(user, post_id_1, PostType.TEXT_ONLY, text='t')
     post_manager.add_post(user, post_id_2, PostType.TEXT_ONLY, text='t')
+    post_manager.add_post(user, post_id_3, PostType.TEXT_ONLY, text='t', is_ad=True, ad_payment=0)
 
     # verify no posts in feed
     assert list(feed_manager.dynamo.generate_items(feed_user_id)) == []
@@ -27,7 +28,7 @@ def test_add_users_posts_to_feed(feed_manager, post_manager, user, cognito_clien
     # add pb's user's posts to the feed
     feed_manager.add_users_posts_to_feed(feed_user_id, user.id)
 
-    # verify those posts made it to the feed
+    # verify those posts made it to the feed, the ad did not
     assert sorted([i['postId'] for i in feed_manager.dynamo.generate_items(feed_user_id)]) == sorted(
         [post_id_1, post_id_2]
     )

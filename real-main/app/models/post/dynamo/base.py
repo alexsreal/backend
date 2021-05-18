@@ -41,15 +41,24 @@ class PostDynamo:
             query_kwargs['FilterExpression'] = Attr('postId').ne(exclude_post_id)
         return next(self.client.generate_all_query(query_kwargs), None)
 
-    def generate_posts_by_user(self, user_id, completed=None):
+    def generate_posts_by_user(self, user_id, completed=None, is_ad=None):
         query_kwargs = {
             'KeyConditionExpression': Key('gsiA2PartitionKey').eq(f'post/{user_id}'),
             'IndexName': 'GSI-A2',
         }
+        filter_exps = []
         if completed is not None:
-            filter_exp = Attr('postStatus')
-            filter_exp = filter_exp.eq if completed else filter_exp.ne
-            query_kwargs['FilterExpression'] = filter_exp(PostStatus.COMPLETED)
+            attr = Attr('postStatus')
+            attr = attr.eq if completed else attr.ne
+            filter_exps.append(attr(PostStatus.COMPLETED))
+        if is_ad is not None:
+            # this logic relies on us never storing adStatus=NOT_AD explicitly in dynamo,
+            # but rather always using a missing attribute to signify adStatus=NOT_AD
+            attr = Attr('adStatus')
+            attr = attr.exists if is_ad else attr.not_exists
+            filter_exps.append(attr())
+        if filter_exps:
+            query_kwargs['FilterExpression'] = functools.reduce(lambda a, b: a & b, filter_exps)
         return self.client.generate_all_query(query_kwargs)
 
     def generate_expired_post_pks_by_day(self, date, cut_off_time=None):

@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 
 from app.models.follower.enums import FollowStatus
-from app.models.post.enums import PostStatus, PostType
+from app.models.post.enums import AdStatus, PostStatus, PostType
 from app.utils import GqlNotificationType
 
 
@@ -88,3 +88,20 @@ def test_on_post_status_change_sync_feed_post_uncompleted(feed_manager, post, st
         call.fire_notification(user_ids[0], GqlNotificationType.USER_FEED_CHANGED),
         call.fire_notification(user_ids[1], GqlNotificationType.USER_FEED_CHANGED),
     ]
+
+
+@pytest.mark.parametrize(
+    'old_status, new_status',
+    [[PostStatus.PENDING, PostStatus.COMPLETED], [PostStatus.COMPLETED, PostStatus.DELETING]],
+)
+def test_on_post_status_change_sync_feed_ads_ignored(feed_manager, post, old_status, new_status):
+    old_item = {**post.item, 'postStatus': old_status, 'adStatus': AdStatus.PENDING}
+    new_item = {**post.item, 'postStatus': new_status, 'adStatus': AdStatus.PENDING}
+    user_ids = [str(uuid4()), str(uuid4())]
+    with patch.object(feed_manager, 'add_post_to_followers_feeds', return_value=user_ids) as add_post_mock:
+        with patch.object(feed_manager, 'dynamo') as dynamo_mock:
+            with patch.object(feed_manager, 'appsync_client') as appsync_client_mock:
+                feed_manager.on_post_status_change_sync_feed(post.id, new_item=new_item, old_item=old_item)
+    assert add_post_mock.mock_calls == []
+    assert dynamo_mock.mock_calls == []
+    assert appsync_client_mock.mock_calls == []
