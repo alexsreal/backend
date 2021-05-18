@@ -1,6 +1,6 @@
 import logging
 from decimal import BasicContext, Decimal
-from random import randint, random
+from random import random
 from uuid import uuid4
 
 import pendulum
@@ -132,7 +132,7 @@ def test_add_pending_post_not_as_ad(post_dynamo, ad_status):
     assert 'adPayment' not in post_item
 
 
-@pytest.mark.parametrize('ad_payment', [randint(0, 100), random(), Decimal(random())])
+@pytest.mark.parametrize('ad_payment', [42, 0.123456789, Decimal('12.3498')])
 def test_add_pending_post_as_ad(post_dynamo, ad_payment):
     user_id, post_id = str(uuid4()), str(uuid4())
     ad_status = AdStatus.PENDING
