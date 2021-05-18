@@ -1267,3 +1267,13 @@ def test_grant_subscription_with_promotion_code(user):
 
     with pytest.raises(UserException):
         user.grant_subscription_with_promotion_code('test_code1')
+
+
+@pytest.mark.parametrize('username', ['real', 'ian'])
+def test_is_real_admin_true(user, username):
+    user.item['username'] = username
+    assert user.is_real_admin is True
+
+
+def test_is_real_admin_false(user):
+    assert user.is_real_admin is False

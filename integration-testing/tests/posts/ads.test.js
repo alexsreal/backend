@@ -7,16 +7,19 @@ const imageBytes = generateRandomJpeg(8, 8)
 const imageData = new Buffer.from(imageBytes).toString('base64')
 const loginCache = new cognito.AppSyncLoginCache()
 
-describe('Add an ad post', () => {
+beforeAll(async () => {
+  loginCache.addCleanLogin(await cognito.getAppSyncLogin())
+})
+
+describe('Adding ad posts', () => {
   let client
 
   beforeAll(async () => {
-    loginCache.addCleanLogin(await cognito.getAppSyncLogin())
     ;({client} = await loginCache.getCleanLogin())
   })
   afterAll(async () => await loginCache.reset())
 
-  test('Can add a non-ad post', async () => {
+  test('Adding a non-ad post', async () => {
     const postId = uuidv4()
     await client
       .mutate({mutation: mutations.addPost, variables: {postId, imageData}})
@@ -49,7 +52,7 @@ describe('Add an ad post', () => {
 
   test('Can add an ad post', async () => {
     const postId = uuidv4()
-    const adPayment = Math.round(Math.random() * 1000 * 1000 * 1000) / 1000 / 1000
+    const adPayment = Number.parseFloat(Number(Math.random() * 1000).toFixed(6))
     await client
       .mutate({mutation: mutations.addPost, variables: {postId, imageData, isAd: true, adPayment}})
       .then(({data}) => expect(data.addPost.postId).toBe(postId))

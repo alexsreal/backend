@@ -8,7 +8,7 @@ import pendulum
 import pytest
 
 from app.mixins.view.enums import ViewType
-from app.models.post.enums import PostStatus, PostType
+from app.models.post.enums import AdStatus, PostStatus, PostType
 from app.models.post.exceptions import PostException
 from app.models.post.model import Post
 from app.models.user.enums import UserSubscriptionLevel
@@ -864,3 +864,23 @@ def test_get_trending_multiplier(post):
     default = post.get_trending_multiplier()
     assert post.get_trending_multiplier(view_type=ViewType.THUMBNAIL) == default
     assert post.get_trending_multiplier(view_type=ViewType.FOCUS) == default * 2
+
+
+def test_approve(post):
+    # can't approve a post that isn't an ad
+    assert post.ad_status == AdStatus.NOT_AD
+    with pytest.raises(PostException, match='Cannot approve post .* in adStatus .*'):
+        post.approve()
+
+    # go directly to DB to change the post to PENDING
+    post.dynamo.set(post.id, ad_status=AdStatus.PENDING)
+    post.refresh_item()
+    assert post.ad_status == AdStatus.PENDING
+
+    # can approve the PENDING ad
+    post.approve()
+    assert post.ad_status == AdStatus.APPROVED
+
+    # can't double approve a post
+    with pytest.raises(PostException, match='Cannot approve post .* in adStatus .*'):
+        post.approve()
