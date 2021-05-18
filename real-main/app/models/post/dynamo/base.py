@@ -217,12 +217,8 @@ class PostDynamo:
         sharing_disabled=None,
         verification_hidden=None,
         keywords=None,
+        ad_status=None,
     ):
-        assert any(
-            k is not None
-            for k in (text, comments_disabled, likes_disabled, sharing_disabled, verification_hidden, keywords)
-        ), 'Action-less post edit requested'
-
         exp_actions = collections.defaultdict(list)
         exp_names = {}
         exp_values = {}
@@ -261,6 +257,15 @@ class PostDynamo:
         if keywords is not None:
             exp_actions['SET'].append('keywords = :kw')
             exp_values[':kw'] = list(set(keywords))  # remove duplicates
+
+        if ad_status is not None:
+            if ad_status == enums.AdStatus.NOT_AD:
+                exp_actions['REMOVE'].append('adStatus')
+            else:
+                exp_actions['SET'].append('adStatus = :ad')
+                exp_values[':ad'] = ad_status
+
+        assert exp_actions, 'Action-less post edit requested'
 
         update_query_kwargs = {
             'Key': self.pk(post_id),

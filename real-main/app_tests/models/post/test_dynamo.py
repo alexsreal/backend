@@ -331,6 +331,24 @@ def test_set_post_status_album_rank_handled_correctly_to_and_from_COMPLETED_in_a
     assert post_item['gsiK3SortKey'] == -1
 
 
+def test_set_ad_status(post_dynamo):
+    user_id, post_id = str(uuid4()), str(uuid4())
+
+    # by default, adStatus not set
+    post_item = post_dynamo.add_pending_post(user_id, post_id, 'ptype')
+    assert post_dynamo.get_post(post_id) == post_item
+    assert 'adStatus' not in post_item
+
+    # set to random value, check
+    ad_status = 'blahblah'
+    post_dynamo.set(post_id, ad_status=ad_status)
+    assert post_dynamo.get_post(post_id) == {**post_item, 'adStatus': ad_status}
+
+    # set to NOT_AD, verify clears ad status in db
+    post_dynamo.set(post_id, ad_status=AdStatus.NOT_AD)
+    assert post_dynamo.get_post(post_id) == post_item
+
+
 def test_set_checksum(post_dynamo):
     post_id = 'pid'
     posted_at_str = pendulum.now('utc').to_iso8601_string()

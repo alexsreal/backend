@@ -1050,6 +1050,28 @@ def restore_archived_post(caller_user, arguments, **kwargs):
     return post.serialize(caller_user.id)
 
 
+@routes.register('Mutation.approveAdPost')
+@validate_caller
+@update_last_client
+@update_last_disable_dating_date
+def approve_ad_post(caller_user, arguments, **kwargs):
+    post_id = arguments['postId']
+
+    if not caller_user.is_real_admin:
+        raise ClientException(f'User `{caller_user.id}` may not approve ads')
+
+    post = post_manager.get_post(post_id)
+    if not post:
+        raise ClientException(f'Post `{post_id}` does not exist')
+
+    try:
+        post.approve()
+    except PostException as err:
+        raise ClientException(str(err)) from err
+
+    return post.serialize(caller_user.id)
+
+
 @routes.register('Mutation.onymouslyLikePost')
 @validate_caller
 @update_last_client

@@ -628,6 +628,15 @@ module.exports.restoreArchivedPost = gql`
   }
 `
 
+module.exports.approveAdPost = gql`
+  mutation ApproveAdPost($postId: ID!) {
+    approveAdPost(postId: $postId) {
+      postId
+      adStatus
+    }
+  }
+`
+
 module.exports.onymouslyLikePost = gql`
   mutation OnymouslyLikePost($postId: ID!) {
     onymouslyLikePost(postId: $postId) {

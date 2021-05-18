@@ -252,6 +252,11 @@ type Mutation {
   # Restore an archived post
   restoreArchivedPost(postId: ID!): Post
 
+  # Approve an ad post
+  #   - may only be called by an admin
+  #   - may only target posts with adStatus of PENDING
+  approveAdPost(postId: ID!): Post
+
   # Post likes
   #   - trying to like a post we do not have access to is an error
   #   - onymously means non-anonymously
