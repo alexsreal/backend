@@ -9,17 +9,19 @@ const loginCache = new cognito.AppSyncLoginCache()
 
 beforeAll(async () => {
   loginCache.addCleanLogin(await cognito.getAppSyncLogin())
+  loginCache.addCleanLogin(await cognito.getAppSyncLogin())
 })
+afterAll(async () => await loginCache.reset())
 
 describe('Adding ad posts', () => {
   let client
 
   beforeAll(async () => {
+    await loginCache.clean()
     ;({client} = await loginCache.getCleanLogin())
   })
-  afterAll(async () => await loginCache.reset())
 
-  test('Adding a non-ad post', async () => {
+  test('Can add a non-ad post', async () => {
     const postId = uuidv4()
     await client
       .mutate({mutation: mutations.addPost, variables: {postId, imageData}})
@@ -63,5 +65,122 @@ describe('Adding ad posts', () => {
       expect(data.post.adStatus).toBe('PENDING')
       expect(data.post.adPayment).toBe(adPayment)
     })
+  })
+})
+
+describe('Effect of User.adsDisabled on visibility of ads & normal posts', () => {
+  let ourClient, ourUserId
+  let theirClient, theirUserId
+  const ourAdPostId = uuidv4()
+  const ourNormalPostId = uuidv4()
+  const theirAdPostId = uuidv4()
+  const theirNormalPostId = uuidv4()
+
+  beforeAll(async () => {
+    await loginCache.clean()
+    ;({client: ourClient, userId: ourUserId} = await loginCache.getCleanLogin())
+    ;({client: theirClient, userId: theirUserId} = await loginCache.getCleanLogin())
+    // we add one ad and one normal post
+    await ourClient.mutate({mutation: mutations.addPost, variables: {postId: ourNormalPostId, imageData}})
+    await ourClient.mutate({
+      mutation: mutations.addPost,
+      variables: {postId: ourAdPostId, imageData, isAd: true, adPayment: 0},
+    })
+    // they add one ad and one normal post
+    await theirClient.mutate({mutation: mutations.addPost, variables: {postId: theirNormalPostId, imageData}})
+    await theirClient.mutate({
+      mutation: mutations.addPost,
+      variables: {postId: theirAdPostId, imageData, isAd: true, adPayment: 0},
+    })
+    // they disable ads
+    await theirClient.mutate({mutation: mutations.setUserMentalHealthSettings, variables: {adsDisabled: true}})
+  })
+
+  test('Successful setup', async () => {
+    // we have ads enabled, the default
+    await eventually(async () => {
+      const {data} = await ourClient.query({query: queries.self})
+      expect(data.self.adsDisabled).toBe(false)
+    })
+    // they have ads disabled
+    await eventually(async () => {
+      const {data} = await theirClient.query({query: queries.self})
+      expect(data.self.adsDisabled).toBe(true)
+    })
+    // our posts completed
+    await eventually(async () => {
+      const {data} = await ourClient.query({query: queries.post, variables: {postId: ourNormalPostId}})
+      expect(data.post.postId).toBe(ourNormalPostId)
+      expect(data.post.postStatus).toBe('COMPLETED')
+      expect(data.post.adStatus).toBe('NOT_AD')
+    })
+    await eventually(async () => {
+      const {data} = await ourClient.query({query: queries.post, variables: {postId: ourAdPostId}})
+      expect(data.post.postId).toBe(ourAdPostId)
+      expect(data.post.postStatus).toBe('COMPLETED')
+      expect(data.post.adStatus).toBe('PENDING')
+    })
+    // their posts completed
+    await eventually(async () => {
+      const {data} = await theirClient.query({query: queries.post, variables: {postId: theirNormalPostId}})
+      expect(data.post.postId).toBe(theirNormalPostId)
+      expect(data.post.postStatus).toBe('COMPLETED')
+      expect(data.post.adStatus).toBe('NOT_AD')
+    })
+    await eventually(async () => {
+      const {data} = await theirClient.query({query: queries.post, variables: {postId: theirAdPostId}})
+      expect(data.post.postId).toBe(theirAdPostId)
+      expect(data.post.postStatus).toBe('COMPLETED')
+      expect(data.post.adStatus).toBe('PENDING')
+    })
+  })
+
+  test('With User.adsDisabled=False, user sees their own ads and non-ads', async () => {
+    await ourClient
+      .query({query: queries.userPosts, variables: {userId: ourUserId}})
+      .then(({data}) => expect(data.user.posts.items).toHaveLength(2))
+    await ourClient
+      .query({query: queries.post, variables: {postId: ourNormalPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(ourNormalPostId))
+    await ourClient
+      .query({query: queries.post, variables: {postId: ourAdPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(ourAdPostId))
+  })
+
+  test('With User.adsDisabled=False, user sees non-ads and ads of other users', async () => {
+    await ourClient
+      .query({query: queries.userPosts, variables: {userId: theirUserId}})
+      .then(({data}) => expect(data.user.posts.items).toHaveLength(2))
+    await ourClient
+      .query({query: queries.post, variables: {postId: theirNormalPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(theirNormalPostId))
+    await ourClient
+      .query({query: queries.post, variables: {postId: theirAdPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(theirAdPostId))
+  })
+
+  test('With User.adsDisabled=True, user sees their own ads and non-ads', async () => {
+    await theirClient
+      .query({query: queries.userPosts, variables: {userId: theirUserId}})
+      .then(({data}) => expect(data.user.posts.items).toHaveLength(2))
+    await theirClient
+      .query({query: queries.post, variables: {postId: theirNormalPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(theirNormalPostId))
+    await theirClient
+      .query({query: queries.post, variables: {postId: theirAdPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(theirAdPostId))
+  })
+
+  test('With User.adsDisabled=True, user sees non-ads of other users but not ads', async () => {
+    await theirClient.query({query: queries.userPosts, variables: {userId: ourUserId}}).then(({data}) => {
+      expect(data.user.posts.items).toHaveLength(1)
+      expect(data.user.posts.items[0].postId).toBe(ourNormalPostId)
+    })
+    await theirClient
+      .query({query: queries.post, variables: {postId: ourNormalPostId}})
+      .then(({data}) => expect(data.post.postId).toBe(ourNormalPostId))
+    await theirClient
+      .query({query: queries.post, variables: {postId: ourAdPostId}})
+      .then(({data}) => expect(data.post).toBeNull())
   })
 })

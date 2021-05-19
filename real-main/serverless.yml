@@ -244,7 +244,7 @@ custom:
         kind: PIPELINE
         functions:
           - Posts.batchGet
-          - Posts.filterBy.postStatus
+          - Posts.filterBy.adStatus
           - PaginatedPosts.items.applyFilters
           - Users.beginPipeline
           - Users.batchGet
@@ -294,9 +294,8 @@ custom:
       - dataSource: DynamodbDataSource
         name: Posts.batchGet
 
-      - dataSource: NoneDataSource
-        name: Posts.filterBy.postStatus
-        response: PassThru.response.vtl
+      - dataSource: DynamodbDataSource
+        name: Posts.filterBy.adStatus
 
       - dataSource: DynamodbDataSource
         name: PaginatedPosts.items.applyFilters
