@@ -88,13 +88,27 @@ We have no local secondary indexes.
 
 ### Feed Table
 
-#### Indexes
+Holds only one type of item, a `Feed` item. Unless otherwise noted, all types are `String`.
 
-- The table's primary key is (`postId`, `feedUserId`).
-- GSI-A1: (`feedUserId`, `postedAt`) with keys and all attributes.
-- GSI-A2: (`feedUserId`, `postedByUserId`) with keys and all attributes.
+#### Schema
 
-#### Notes
 
-- All types are strings.
-- There are no attributes beyond those listed in the indexes above.
+| Attribute        | Table Partition Key | Table Sort Key   | GSI-A1 Partition Key | GSI-A1 Sort Key  | GSI-A2 Partition Key | GSI-A2 Sort Key  |
+|:---------------- |:-------------------:|:----------------:|:--------------------:|:----------------:|:--------------------:|:----------------:|
+| `postId`         | :heavy_check_mark:  |                  |                      |                  |                      |                  |
+| `feedUserId`     |                     |:heavy_check_mark:| :heavy_check_mark:   |                  | :heavy_check_mark:   |                  |
+| `postedAt`       |                     |                  |                      |:heavy_check_mark:|                      |                  |
+| `postedByUserId` |                     |                  |                      |                  |                      |:heavy_check_mark:|
+
+### Ad Feed Table
+
+Holds only one type of item, an `AdFeed` item. Unless otherwise noted, all types are `String`.
+
+#### Schema
+
+
+| Attribute            | Table Partition Key | Table Sort Key   | GSI-A1 Partition Key | GSI-A1 Sort Key  |
+|:-------------------- |:-------------------:|:----------------:|:--------------------:|:----------------:|
+| `postId`             | :heavy_check_mark:  |                  |                      |                  |
+| `feedUserId`         |                     |:heavy_check_mark:| :heavy_check_mark:   |                  |
+| `servedCount:Number` |                     |                  |                      |:heavy_check_mark:|

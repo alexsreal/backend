@@ -28,6 +28,7 @@ provider:
 
     DYNAMO_TABLE: ${self:provider.stackName}
     DYNAMO_FEED_TABLE: real-${self:provider.stage}-feed
+    DYNAMO_AD_FEED_TABLE: real-${self:provider.stage}-ad-feed
     DYNAMO_MATCHES_TABLE: real-${self:provider.stage}-dating-matches
 
     REAL_DATING_PUT_USER_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-put-user
@@ -83,6 +84,8 @@ provider:
         - !Join [ /, [ !GetAtt DynamoDbTable.Arn, index, '*' ] ]
         - !GetAtt FeedTable.Arn
         - !Join [ /, [ !GetAtt FeedTable.Arn, index, '*' ] ]
+        - !GetAtt AdFeedTable.Arn
+        - !Join [ /, [ !GetAtt AdFeedTable.Arn, index, '*' ] ]
     - Effect: Allow
       Action:
         - secretsmanager:GetSecretValue
@@ -346,6 +349,11 @@ custom:
         name: DynamodbFeedDataSource
         config:
           tableName: ${self:provider.environment.DYNAMO_FEED_TABLE}
+
+      - type: AMAZON_DYNAMODB
+        name: DynamodbAdFeedDataSource
+        config:
+          tableName: ${self:provider.environment.DYNAMO_AD_FEED_TABLE}
 
       - type: AMAZON_DYNAMODB
         name: DynamodbMatchesDataSource
