@@ -35,6 +35,7 @@ provider:
     REAL_DATING_MATCH_STATUS_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-match-status
     REAL_DATING_SWIPED_RIGHT_USERS_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-swiped-right-users
     REAL_DATING_GET_USER_MATCHES_COUNT_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-get-user-matches-count
+    REAL_TRANSACTIONS_API_ROOT: ${env:REAL_TRANSACTIONS_API_ROOT, ${self:custom.realTransctions.apiRoot.${self:provider.stage}}}
 
     USER_NOTIFICATIONS_ENABLED: ${env:USER_NOTIFICATIONS_ENABLED, 'true'}
     USER_NOTIFICATIONS_ONLY_USERNAMES: ${env:USER_NOTIFICATIONS_ONLY_USERNAMES, ''}  # space-seperated list
@@ -166,6 +167,11 @@ custom:
   realDating:
     stackName: real-${self:provider.stage}-dating
     lambdaFunctionArnPrefix: 'arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:custom.realDating.stackName}'
+
+  realTransactions:
+    apiRoot:
+      production: https://TODO
+      staging: https://TODO
 
   sesSender:
     defaultAddress: 'no-reply@real.app'
