@@ -8,19 +8,28 @@ import requests_mock
 
 from app.clients import RealTransactionsClient
 
-api_root = 'https://an.api.gateway.url/the-stage'
+api_host = 'the.api.host'
+api_stage = 'the-stage'
+api_region = 'the-region'
 
 # https://github.com/real-social-media/transactions/blob/83bd05b/serverless.yml#L139
 # https://github.com/real-social-media/transactions/blob/83bd05b/serverless.yml#L150
 endpoint_urls = {
-    'pay_for_ad_view': f'{api_root}/pay_user_for_advertisement',
-    'pay_for_post_view': f'{api_root}/pay_for_post_view',
+    'pay_for_ad_view': f'https://{api_host}/{api_stage}/pay_user_for_advertisement',
+    'pay_for_post_view': f'https://{api_host}/{api_stage}/pay_for_post_view',
 }
 
 
 @pytest.fixture
 def client():
-    yield RealTransactionsClient(api_root=api_root)
+    yield RealTransactionsClient(api_host=api_host, api_stage=api_stage, api_region=api_region)
+
+
+# https://github.com/DavidMuller/aws-requests-auth/issues/49#issuecomment-543297856
+@pytest.fixture
+def mock_env_aws_auth(monkeypatch):
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "mock_key_id")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "mock_secret")
 
 
 @pytest.mark.parametrize('amount', [0.1, 1])
@@ -32,7 +41,7 @@ def test_amount_must_be_a_decimal(client, func_name, amount):
         target(uid1, uid2, pid, amount)
 
 
-def test_pay_for_ad_view_sends_correct_request(client):
+def test_pay_for_ad_view_sends_correct_request(client, mock_env_aws_auth):
     url = endpoint_urls['pay_for_ad_view']
     viewer_id = str(uuid4())
     ad_post_owner_id = str(uuid4())
@@ -51,7 +60,7 @@ def test_pay_for_ad_view_sends_correct_request(client):
     }
 
 
-def test_pay_for_post_view_sends_correct_request(client):
+def test_pay_for_post_view_sends_correct_request(client, mock_env_aws_auth):
     url = endpoint_urls['pay_for_post_view']
     viewer_id = str(uuid4())
     post_owner_id = str(uuid4())
@@ -71,7 +80,7 @@ def test_pay_for_post_view_sends_correct_request(client):
 
 
 @pytest.mark.parametrize('func_name', ['pay_for_ad_view', 'pay_for_post_view'])
-def test_handles_error_response(client, func_name):
+def test_handles_error_response(client, mock_env_aws_auth, func_name):
     url = endpoint_urls[func_name]
     # https://github.com/real-social-media/transactions/blob/83bd05b/transactions/app/api.py#L337
     # https://github.com/real-social-media/transactions/blob/83bd05b/transactions/app/api.py#L378
@@ -86,7 +95,7 @@ def test_handles_error_response(client, func_name):
 
 
 @pytest.mark.parametrize('func_name', ['pay_for_ad_view', 'pay_for_post_view'])
-def test_handles_success_response(client, func_name):
+def test_handles_success_response(client, mock_env_aws_auth, func_name):
     url = endpoint_urls[func_name]
     # https://github.com/real-social-media/transactions/blob/83bd05b/transactions/app/api.py#L342
     # https://github.com/real-social-media/transactions/blob/83bd05b/transactions/app/api.py#L383

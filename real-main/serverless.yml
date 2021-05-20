@@ -35,7 +35,10 @@ provider:
     REAL_DATING_MATCH_STATUS_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-match-status
     REAL_DATING_SWIPED_RIGHT_USERS_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-swiped-right-users
     REAL_DATING_GET_USER_MATCHES_COUNT_ARN: ${self:custom.realDating.lambdaFunctionArnPrefix}-get-user-matches-count
-    REAL_TRANSACTIONS_API_ROOT: ${env:REAL_TRANSACTIONS_API_ROOT, ${self:custom.realTransctions.apiRoot.${self:provider.stage}}}
+
+    REAL_TRANSACTIONS_API_HOST: ${env:REAL_TRANSACTIONS_API_HOST, self:custom.realTransactions.apiHost.${self:provider.stage}}
+    REAL_TRANSACTIONS_API_STAGE: ${env:REAL_TRANSACTIONS_API_STAGE, self:provider.stage}
+    REAL_TRANSACTIONS_API_REGION: ${env:REAL_TRANSACTIONS_API_REGION, self:provider.region}
 
     USER_NOTIFICATIONS_ENABLED: ${env:USER_NOTIFICATIONS_ENABLED, 'true'}
     USER_NOTIFICATIONS_ONLY_USERNAMES: ${env:USER_NOTIFICATIONS_ONLY_USERNAMES, ''}  # space-seperated list
@@ -169,9 +172,9 @@ custom:
     lambdaFunctionArnPrefix: 'arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:${self:custom.realDating.stackName}'
 
   realTransactions:
-    apiRoot:
-      production: https://TODO
-      staging: https://TODO
+    apiHost:
+      staging: ?????????.execute-api.??????.amazonaws.com
+      production: ?????????.execute-api.?????.amazonaws.com
 
   sesSender:
     defaultAddress: 'no-reply@real.app'

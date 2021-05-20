@@ -4,38 +4,47 @@ import os
 from decimal import Decimal
 
 import requests
+from aws_requests_auth.boto_utils import BotoAWSRequestsAuth
 
 from app.utils import DecimalAsStringJsonEncoder
 
 logger = logging.getLogger()
 
-REAL_TRANSACTIONS_API_ROOT = os.environ.get('REAL_TRANSACTIONS_API_ROOT')
+REAL_TRANSACTIONS_API_HOST = os.environ.get('REAL_TRANSACTIONS_API_HOST')
+REAL_TRANSACTIONS_API_STAGE = os.environ.get('REAL_TRANSACTIONS_API_STAGE')
+REAL_TRANSACTIONS_API_REGION = os.environ.get('REAL_TRANSACTIONS_API_REGION')
 
 
 class RealTransactionsClient:
-    def __init__(self, api_root=REAL_TRANSACTIONS_API_ROOT):
-        self.api_root = api_root
+    def __init__(
+        self,
+        api_host=REAL_TRANSACTIONS_API_HOST,
+        api_stage=REAL_TRANSACTIONS_API_STAGE,
+        api_region=REAL_TRANSACTIONS_API_REGION,
+    ):
+        self.api_root = f'https://{api_host}/{api_stage}'
+        self.auth = BotoAWSRequestsAuth(aws_host=api_host, aws_region=api_region, aws_service='execute-api')
         self.session = requests.Session()
         self.session.hooks = {'response': lambda r, *args, **kwargs: r.raise_for_status()}
 
     def pay_for_ad_view(self, viewer_id, ad_post_owner_id, ad_post_id, amount):
         assert isinstance(amount, Decimal), "'amount' must be a Decimal"
-        url = self.api_root + '/pay_user_for_advertisement'
+        url = f'{self.api_root}/pay_user_for_advertisement'
         data = {
             'advertiser_uuid': ad_post_owner_id,
             'amount': amount,
             'description': f'For view of ad with post id: {ad_post_id}',
             'viewer_uuid': viewer_id,
         }
-        self.session.post(url, data=json.dumps(data, cls=DecimalAsStringJsonEncoder))
+        self.session.post(url, auth=self.auth, data=json.dumps(data, cls=DecimalAsStringJsonEncoder))
 
     def pay_for_post_view(self, viewer_id, post_owner_id, post_id, amount):
         assert isinstance(amount, Decimal), "'amount' must be a Decimal"
-        url = self.api_root + '/pay_for_post_view'
+        url = f'{self.api_root}/pay_for_post_view'
         data = {
             'amount': amount,
             'post_owner_uuid': post_owner_id,
             'post_uuid': post_id,
             'viewer_uuid': viewer_id,
         }
-        self.session.post(url, data=json.dumps(data, cls=DecimalAsStringJsonEncoder))
+        self.session.post(url, auth=self.auth, data=json.dumps(data, cls=DecimalAsStringJsonEncoder))
