@@ -177,6 +177,11 @@ def real_dating_client():
 
 
 @pytest.fixture
+def real_transactions_client():
+    yield mock.Mock(clients.RealTransactionsClient(api_host='testing.host', api_stage='testing-stage'))
+
+
+@pytest.fixture
 def redeem_promotion_client():
     yield mock.Mock(clients.RedeemPromotionClient())
 
@@ -285,6 +290,7 @@ def post_manager(
     cloudfront_client,
     post_verification_client,
     elasticsearch_client,
+    real_transactions_client,
 ):
     yield models.PostManager(
         {
@@ -294,6 +300,7 @@ def post_manager(
             'cloudfront': cloudfront_client,
             'post_verification': post_verification_client,
             'elasticsearch': elasticsearch_client,
+            'real_transactions': real_transactions_client,
         }
     )
 

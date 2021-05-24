@@ -10,18 +10,13 @@ from app.utils import DecimalAsStringJsonEncoder
 
 logger = logging.getLogger()
 
-REAL_TRANSACTIONS_API_HOST = os.environ.get('REAL_TRANSACTIONS_API_HOST')
-REAL_TRANSACTIONS_API_STAGE = os.environ.get('REAL_TRANSACTIONS_API_STAGE')
-REAL_TRANSACTIONS_API_REGION = os.environ.get('REAL_TRANSACTIONS_API_REGION')
+API_HOST = os.environ.get('REAL_TRANSACTIONS_API_HOST')
+API_STAGE = os.environ.get('REAL_TRANSACTIONS_API_STAGE')
+API_REGION = os.environ.get('REAL_TRANSACTIONS_API_REGION')
 
 
 class RealTransactionsClient:
-    def __init__(
-        self,
-        api_host=REAL_TRANSACTIONS_API_HOST,
-        api_stage=REAL_TRANSACTIONS_API_STAGE,
-        api_region=REAL_TRANSACTIONS_API_REGION,
-    ):
+    def __init__(self, api_host=API_HOST, api_stage=API_STAGE, api_region=API_REGION):
         self.api_root = f'https://{api_host}/{api_stage}'
         self.auth = BotoAWSRequestsAuth(aws_host=api_host, aws_region=api_region, aws_service='execute-api')
         self.session = requests.Session()

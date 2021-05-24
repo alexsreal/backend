@@ -47,6 +47,7 @@ class Post(FlagModelMixin, TrendingModelMixin, ViewModelMixin):
         cloudfront_client=None,
         mediaconvert_client=None,
         post_verification_client=None,
+        real_transactions_client=None,
         s3_uploads_client=None,
         album_manager=None,
         block_manager=None,
@@ -72,6 +73,8 @@ class Post(FlagModelMixin, TrendingModelMixin, ViewModelMixin):
             self.mediaconvert_client = mediaconvert_client
         if post_verification_client is not None:
             self.post_verification_client = post_verification_client
+        if real_transactions_client is not None:
+            self.real_transactions_client = real_transactions_client
         if s3_uploads_client is not None:
             self.s3_uploads_client = s3_uploads_client
 
@@ -628,7 +631,16 @@ class Post(FlagModelMixin, TrendingModelMixin, ViewModelMixin):
 
         # record user's view of their own post, but don't increment any counters about it
         # their view will be filtered out when looking at Post.viewedBy
-        super().record_view_count(user_id, view_count, viewed_at=viewed_at, view_type=view_type)
+        is_new_view = super().record_view_count(user_id, view_count, viewed_at=viewed_at, view_type=view_type)
+
+        # pay advertisers only for the first FOCUS view of an add
+        if (
+            self.ad_status != AdStatus.NOT_AD
+            and view_type == ViewType.FOCUS
+            and user_id != self.user_id
+            and is_new_view
+        ):
+            self.real_transactions_client.pay_for_ad_view(user_id, self.user_id, self.id, self.item['adPayment'])
 
         # If this is a non-original post, count this like a view of the original post as well
         if self.original_post_id != self.id:

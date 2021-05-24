@@ -28,6 +28,7 @@ clients = {
     'elasticsearch': clients.ElasticSearchClient(),
     'pinpoint': clients.PinpointClient(),
     'real_dating': clients.RealDatingClient(),
+    'real_transactions': clients.RealTransactionsClient(),
     's3_uploads': clients.S3Client(S3_UPLOADS_BUCKET),
 }
 
