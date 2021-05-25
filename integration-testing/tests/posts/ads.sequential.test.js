@@ -24,32 +24,42 @@ afterAll(async () => {
 
 describe('Approving an ad post', () => {
   const postIdAd = uuidv4()
+  const postIdAdNotCompleted = uuidv4()
   const postIdNonAd = uuidv4()
   let client, realClient
 
   beforeAll(async () => {
+    await loginCache.clean()
+    await realUser.cleanLogin()
     ;({client: realClient} = await realLogin)
     ;({client} = await loginCache.getCleanLogin())
     await client.mutate({
       mutation: mutations.addPost,
       variables: {postId: postIdAd, imageData, isAd: true, adPayment: 0.01},
     })
+    await client.mutate({
+      mutation: mutations.addPost,
+      variables: {postId: postIdAdNotCompleted, isAd: true, adPayment: 0.01},
+    })
     await client.mutate({mutation: mutations.addPost, variables: {postId: postIdNonAd, imageData}})
-  })
-  afterAll(async () => {
-    await realUser.resetLogin()
-    await loginCache.reset()
   })
 
   test('Setup success', async () => {
     await eventually(async () => {
       const {data} = await client.query({query: queries.post, variables: {postId: postIdAd}})
       expect(data.post.postId).toBe(postIdAd)
+      expect(data.post.postStatus).toBe('COMPLETED')
+      expect(data.post.adStatus).toBe('PENDING')
+    })
+    await client.query({query: queries.post, variables: {postId: postIdAdNotCompleted}}).then(({data}) => {
+      expect(data.post.postId).toBe(postIdAdNotCompleted)
+      expect(data.post.postStatus).toBe('PENDING')
       expect(data.post.adStatus).toBe('PENDING')
     })
     await eventually(async () => {
       const {data} = await client.query({query: queries.post, variables: {postId: postIdNonAd}})
       expect(data.post.postId).toBe(postIdNonAd)
+      expect(data.post.postStatus).toBe('COMPLETED')
       expect(data.post.adStatus).toBe('NOT_AD')
     })
   })
@@ -73,11 +83,11 @@ describe('Approving an ad post', () => {
     test('can approve an ad post', async () => {
       await realClient
         .mutate({mutation: mutations.approveAdPost, variables: {postId: postIdAd}})
-        .then(({data}) => expect(data.approveAdPost.adStatus).toBe('APPROVED'))
+        .then(({data}) => expect(data.approveAdPost.adStatus).toBe('ACTIVE'))
       await eventually(async () => {
         const {data} = await client.query({query: queries.post, variables: {postId: postIdAd}})
         expect(data.post.postId).toBe(postIdAd)
-        expect(data.post.adStatus).toBe('APPROVED')
+        expect(data.post.adStatus).toBe('ACTIVE')
       })
     })
 
@@ -87,7 +97,21 @@ describe('Approving an ad post', () => {
         .then(({errors}) => {
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(/^ClientError: /)
-          expect(errors[0].message).toMatch(/Cannot approve post .* in adStatus `APPROVED`/)
+          expect(errors[0].message).toMatch(/Cannot approve post .* with adStatus `ACTIVE`/)
+        })
+    })
+
+    test('cannot approve a non-COMPLETED ad post', async () => {
+      await realClient
+        .mutate({
+          mutation: mutations.approveAdPost,
+          variables: {postId: postIdAdNotCompleted},
+          errorPolicy: 'all',
+        })
+        .then(({errors}) => {
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toMatch(/^ClientError: /)
+          expect(errors[0].message).toMatch(/Cannot approve post .* with status `PENDING`/)
         })
     })
 
@@ -97,7 +121,7 @@ describe('Approving an ad post', () => {
         .then(({errors}) => {
           expect(errors).toHaveLength(1)
           expect(errors[0].message).toMatch(/^ClientError: /)
-          expect(errors[0].message).toMatch(/Cannot approve post .* in adStatus `NOT_AD`/)
+          expect(errors[0].message).toMatch(/Cannot approve post .* with adStatus `NOT_AD`/)
         })
     })
 
@@ -109,6 +133,69 @@ describe('Approving an ad post', () => {
           expect(errors[0].message).toMatch(/^ClientError: /)
           expect(errors[0].message).toMatch(/Post .* does not exist/)
         })
+    })
+  })
+})
+
+describe('An ad post', () => {
+  const postId = uuidv4()
+  let client, realClient
+
+  beforeAll(async () => {
+    await loginCache.clean()
+    await realUser.cleanLogin()
+    ;({client: realClient} = await realLogin)
+    ;({client} = await loginCache.getCleanLogin())
+    await client.mutate({
+      mutation: mutations.addPost,
+      variables: {postId, imageData, isAd: true, adPayment: 0.01},
+    })
+  })
+
+  test('Setup', async () => {
+    await eventually(async () => {
+      const {data} = await client.query({query: queries.post, variables: {postId}})
+      expect(data.post.postId).toBe(postId)
+      expect(data.post.postStatus).toBe('COMPLETED')
+      expect(data.post.adStatus).toBe('PENDING')
+    })
+  })
+
+  describe('Which is approved', () => {
+    beforeAll(async () => {
+      await realClient.mutate({mutation: mutations.approveAdPost, variables: {postId}})
+    })
+
+    test('Setup', async () => {
+      await eventually(async () => {
+        const {data} = await client.query({query: queries.post, variables: {postId}})
+        expect(data.post.postId).toBe(postId)
+        expect(data.post.adStatus).toBe('ACTIVE')
+      })
+    })
+
+    test('Archiving the post transitions it to adStatus INACTIVE', async () => {
+      await client.mutate({mutation: mutations.archivePost, variables: {postId}}).then(({data}) => {
+        expect(data.archivePost.postId).toBe(postId)
+        expect(data.archivePost.postStatus).toBe('ARCHIVED')
+      })
+      await eventually(async () => {
+        const {data} = await client.query({query: queries.post, variables: {postId}})
+        expect(data.post.postId).toBe(postId)
+        expect(data.post.adStatus).toBe('INACTIVE')
+      })
+    })
+
+    test('Restoring the post transitions it to adStatus ACTIVE', async () => {
+      await client.mutate({mutation: mutations.restoreArchivedPost, variables: {postId}}).then(({data}) => {
+        expect(data.restoreArchivedPost.postId).toBe(postId)
+        expect(data.restoreArchivedPost.postStatus).toBe('COMPLETED')
+      })
+      await eventually(async () => {
+        const {data} = await client.query({query: queries.post, variables: {postId}})
+        expect(data.post.postId).toBe(postId)
+        expect(data.post.adStatus).toBe('ACTIVE')
+      })
     })
   })
 })

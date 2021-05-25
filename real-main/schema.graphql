@@ -753,7 +753,8 @@ enum LikeStatus {
 enum AdStatus {
   NOT_AD
   PENDING
-  APPROVED
+  ACTIVE
+  INACTIVE
 }
 
 enum FlagStatus {

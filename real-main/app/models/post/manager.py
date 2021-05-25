@@ -496,6 +496,16 @@ class PostManager(FlagManagerMixin, TrendingManagerMixin, ViewManagerMixin, Mana
         for k in keywords:
             self.elasticsearch_client.delete_keyword(post_id, k)
 
+    def on_post_status_change_update_ad_status(self, post_id, new_item, old_item=None):
+        post_status = new_item.get('postStatus', None)
+        old_post_status = (old_item or {}).get('postStatus', None)
+        assert post_status != old_post_status, "Should only be called if postStatus changed"
+        ad_status = new_item.get('adStatus', AdStatus.NOT_AD)
+        if post_status != PostStatus.COMPLETED and ad_status == AdStatus.ACTIVE:
+            self.dynamo.set(post_id, ad_status=AdStatus.INACTIVE)
+        if post_status == PostStatus.COMPLETED and ad_status == AdStatus.INACTIVE:
+            self.dynamo.set(post_id, ad_status=AdStatus.ACTIVE)
+
     def sync_elasticsearch(self, post_id, new_item, old_item=None):
         self.elasticsearch_client.put_post(post_id, new_item['keywords'])
         # remove old keywords

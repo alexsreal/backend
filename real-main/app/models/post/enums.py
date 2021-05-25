@@ -1,9 +1,10 @@
 class AdStatus:
     NOT_AD = 'NOT_AD'
     PENDING = 'PENDING'
-    APPROVED = 'APPROVED'
+    ACTIVE = 'ACTIVE'
+    INACTIVE = 'INACTIVE'
 
-    _ALL = (NOT_AD, PENDING, APPROVED)
+    _ALL = (NOT_AD, PENDING, ACTIVE, INACTIVE)
 
 
 class PostStatus:

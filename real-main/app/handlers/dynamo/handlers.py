@@ -156,6 +156,13 @@ register(
 register(
     'post',
     '-',
+    ['INSERT', 'MODIFY'],
+    post_manager.on_post_status_change_update_ad_status,
+    {'postStatus': None},
+)
+register(
+    'post',
+    '-',
     ['INSERT', 'MODIFY', 'REMOVE'],
     feed_manager.on_post_status_change_sync_feed,
     {'postStatus': None},
